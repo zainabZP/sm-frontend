@@ -1,0 +1,24 @@
+.auth-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 80vh;
+    padding: 20px;
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 400px;
+    padding: 32px;
+}
+
+.error-banner {
+    background-color: rgba(244, 33, 46, 0.1);
+    color: var(--danger-color);
+    padding: 12px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    text-align: center;
+    border: 1px solid rgba(244, 33, 46, 0.2);
+}

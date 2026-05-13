@@ -1,0 +1,105 @@
+<div class="feed-header" style="display: flex; justify-content: space-around; padding: 0;">
+    <div class="tab-item" [class.active-tab]="activeTab === 'explore'" (click)="switchTab('explore')">Explore / For You</div>
+    <div class="tab-item" [class.active-tab]="activeTab === 'following'" (click)="switchTab('following')">Following</div>
+</div>
+
+<!-- Create Post Box -->
+<div class="create-post-container">
+    <div style="display: flex; gap: 12px;">
+        <div class="avatar-placeholder"></div>
+        <div style="flex: 1;">
+            <textarea 
+                placeholder="What's happening?" 
+                [(ngModel)]="newPostContent"
+                rows="3"
+                style="border: none; border-bottom: 1px solid var(--border-color); padding: 8px 0; border-radius: 0; resize: none; font-size: 20px;">
+            </textarea>
+            
+            <div style="margin-top: 8px;">
+                <input 
+                    type="text" 
+                    placeholder="Image URL (optional)" 
+                    [(ngModel)]="newPostMediaUrl"
+                    style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 14px;">
+            </div>
+
+            <div style="margin-top: 8px;">
+                <input 
+                    type="text" 
+                    placeholder="Hashtags (e.g. #nature #coding)" 
+                    [(ngModel)]="newPostHashtags"
+                    style="width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 14px;">
+            </div>
+            
+            <div style="display: flex; justify-content: flex-end; margin-top: 12px;">
+                <button class="btn-primary" (click)="createPost()" [disabled]="!newPostContent.trim()">Post</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- Loading state -->
+<div *ngIf="loading" style="padding: 30px; text-align: center; color: var(--twitter-blue);">
+    Loading feed...
+</div>
+
+<!-- Posts Feed -->
+<div class="posts-container" *ngIf="!loading">
+    <div *ngFor="let post of posts" class="post-card">
+        <div style="display: flex; gap: 12px;">
+            <div class="avatar-placeholder" [routerLink]="['/profile', post.userId]" [style.background-image]="post.avatarUrl ? 'url(' + post.avatarUrl + ')' : ''" style="background-size: cover; background-position: center; cursor: pointer;"></div>
+            <div style="flex: 1;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <div [routerLink]="['/profile', post.userId]" style="cursor: pointer;">
+                        <span style="font-weight: 700; margin-right: 6px;">{{ post.fullName || post.userName || 'User' + post.userId }}</span>
+                        <span style="color: var(--text-muted); font-size: 14px;">&#64;{{ (post.userName || 'user' + post.userId).toLowerCase() }}</span>
+                    </div>
+                </div>
+                
+                <p style="font-size: 15px; line-height: 1.5; margin-bottom: 12px; white-space: pre-wrap;">{{ post.content }}</p>
+                
+                <!-- Hashtags -->
+                <div *ngIf="post.hashtags" style="margin-bottom: 12px; display: flex; flex-wrap: wrap; gap: 8px;">
+                    <span *ngFor="let tag of post.hashtags.split(' ')" 
+                          [routerLink]="['/search']" [queryParams]="{ hashtag: tag.replace('#', '') }"
+                          style="color: var(--twitter-blue); cursor: pointer; font-size: 14px; font-weight: 500;">
+                        {{ tag.startsWith('#') ? tag : '#' + tag }}
+                    </span>
+                </div>
+                
+                <!-- Post Image -->
+                <div *ngIf="post.mediaUrl" style="margin-bottom: 12px; border-radius: 16px; overflow: hidden; border: 1px solid var(--border-color);">
+                    <img [src]="post.mediaUrl" style="width: 100%; display: block; max-height: 500px; object-fit: cover;">
+                </div>
+                
+                <!-- Action bar -->
+                <div class="post-actions">
+                    <button class="action-btn comment-btn" (click)="toggleComments(post)">
+                        <span class="icon">💬</span> {{ post.commentCount || 0 }}
+                    </button>
+                    <button class="action-btn like-btn" [class.liked]="post.hasLiked" (click)="toggleLike(post)">
+                        <span class="icon">{{ post.hasLiked ? '❤️' : '🤍' }}</span> {{ post.likeCount || 0 }}
+                    </button>
+                </div>
+
+                <!-- Comments Section -->
+                <div *ngIf="post.showComments" class="comments-section" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border-color);">
+                    <div class="add-comment" style="display: flex; gap: 10px; margin-bottom: 15px;">
+                        <input type="text" [(ngModel)]="post.newComment" placeholder="Post a reply..." style="flex: 1; padding: 8px; border: 1px solid var(--border-color); border-radius: 20px;">
+                        <button class="btn-primary" style="padding: 5px 15px;" (click)="addComment(post)">Reply</button>
+                    </div>
+                    
+                    <div *ngFor="let comment of post.comments" class="comment-item" style="margin-bottom: 12px; font-size: 14px; display: flex; gap: 10px;">
+                        <div class="avatar-placeholder" [routerLink]="['/profile', comment.userId]" [style.background-image]="comment.avatarUrl ? 'url(' + comment.avatarUrl + ')' : ''" style="width: 24px; height: 24px; background-size: cover; background-position: center; cursor: pointer;"></div>
+                        <div>
+                            <span [routerLink]="['/profile', comment.userId]" style="font-weight: 700; cursor: pointer;">{{ comment.fullName || comment.userName || 'User' + comment.userId }}</span>
+                            <p style="margin: 4px 0;">{{ comment.content }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

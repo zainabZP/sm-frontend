@@ -1,0 +1,42 @@
+.nav-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    border-radius: 9999px; /* Pill shape like Twitter */
+    font-size: 19px;
+    margin-bottom: 8px;
+    transition: background-color 0.2s ease;
+    cursor: pointer;
+    text-decoration: none;
+    color: var(--text-main);
+}
+
+.nav-item:hover {
+    background-color: var(--border-color);
+}
+
+.icon {
+    font-size: 24px;
+    margin-right: 16px;
+}
+
+.label {
+    font-weight: 400;
+}
+
+.active-link {
+    font-weight: 700;
+}
+
+.active-link .label {
+    font-weight: 700;
+}
+
+.login-btn {
+    color: white;
+    background-color: var(--twitter-blue);
+}
+
+.login-btn:hover {
+    background-color: var(--twitter-hover);
+}

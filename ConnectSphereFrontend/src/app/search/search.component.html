@@ -1,0 +1,92 @@
+<div class="search-container">
+  <!-- Search Input -->
+<div class="feed-header">
+    <div style="display: flex; gap: 10px; width: 100%; padding: 10px;">
+        <input 
+            type="text" 
+            [(ngModel)]="searchQuery" 
+            (keyup.enter)="onSearch()"
+            placeholder="Search users or hashtags..." 
+            style="flex: 1; padding: 10px 16px; background: var(--border-color); border: none; border-radius: 25px; color: var(--text-main);">
+        <button class="btn-primary" (click)="onSearch()" style="padding: 8px 20px;">Search</button>
+    </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- Loading state -->
+<div *ngIf="loading" style="padding: 30px; text-align: center; color: var(--twitter-blue);">
+    Searching...
+</div>
+
+<!-- Results Area -->
+<div class="results-container" *ngIf="!loading">
+    <!-- User Results -->
+    <div *ngIf="searchMode === 'users'">
+        <div *ngFor="let user of users" class="user-card" style="padding: 16px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; gap: 12px; align-items: center; cursor: pointer;" [routerLink]="['/profile', user.userId]">
+                <div class="avatar-placeholder" [style.background-image]="user.avatarUrl ? 'url(' + user.avatarUrl + ')' : ''" style="width: 48px; height: 48px; background-size: cover; background-position: center;"></div>
+                <div>
+                    <div style="font-weight: 700; font-size: 16px;">{{ user.fullName }}</div>
+                    <div style="color: var(--text-muted); font-size: 14px;">&#64;{{ user.userName }}</div>
+                </div>
+            </div>
+            <button class="btn-outline" (click)="toggleFollow(user)" style="padding: 6px 16px; font-size: 14px; min-width: 100px;">
+                {{ user.followStatus === 'ACCEPTED' ? 'Unfollow' : (user.followStatus === 'PENDING' ? 'Pending' : 'Follow') }}
+            </button>
+        </div>
+        <div *ngIf="users.length === 0 && searchQuery" style="padding: 40px; text-align: center; color: var(--text-muted);">
+            No users found matching "{{ searchQuery }}"
+        </div>
+    </div>
+
+    <!-- Post/Hashtag Results -->
+    <div *ngIf="searchMode === 'posts'">
+        <div *ngFor="let post of posts" class="post-card" style="padding: 16px; border-bottom: 1px solid var(--border-color);">
+            <div style="display: flex; gap: 12px;">
+                <div class="avatar-placeholder" [routerLink]="['/profile', post.userId]" [style.background-image]="post.avatarUrl ? 'url(' + post.avatarUrl + ')' : ''" style="width: 40px; height: 40px; background-size: cover; background-position: center; flex-shrink: 0; cursor: pointer;"></div>
+                <div style="flex: 1;">
+                    <div [routerLink]="['/profile', post.userId]" style="cursor: pointer; margin-bottom: 4px;">
+                        <span style="font-weight: 700;">{{ post.fullName || post.userName }}</span>
+                        <span style="color: var(--text-muted); font-size: 14px; margin-left: 6px;">&#64;{{ post.userName }}</span>
+                    </div>
+                    
+                    <p style="font-size: 15px; margin-bottom: 12px; white-space: pre-wrap;">{{ post.content }}</p>
+                    
+                    <!-- Hashtags -->
+                    <div *ngIf="post.hashtags" style="margin-bottom: 12px; display: flex; flex-wrap: wrap; gap: 8px;">
+                        <span *ngFor="let tag of post.hashtags.split(' ')" 
+                              [routerLink]="['/search']" [queryParams]="{ hashtag: tag.replace('#', '') }"
+                              style="color: var(--twitter-blue); cursor: pointer; font-size: 14px; font-weight: 500;">
+                            {{ tag.startsWith('#') ? tag : '#' + tag }}
+                        </span>
+                    </div>
+                    
+                    <div *ngIf="post.mediaUrl" style="margin-bottom: 12px; border-radius: 16px; overflow: hidden; border: 1px solid var(--border-color);">
+                        <img [src]="post.mediaUrl" style="width: 100%; display: block; max-height: 400px; object-fit: cover;">
+                    </div>
+
+                    <div style="display: flex; gap: 20px; color: var(--text-muted);">
+                        <button (click)="toggleComments(post)" style="background:none; border:none; color:inherit; cursor:pointer;">
+                            💬 {{ post.commentCount }}
+                        </button>
+                        <button (click)="toggleLike(post)" [style.color]="post.hasLiked ? 'var(--heart-red)' : 'inherit'" style="background:none; border:none; cursor:pointer;">
+                            {{ post.hasLiked ? '❤️' : '🤍' }} {{ post.likeCount }}
+                        </button>
+                    </div>
+
+                    <!-- Comments section placeholder (can be expanded like feed) -->
+                    <div *ngIf="post.showComments" style="margin-top: 12px; border-top: 1px solid var(--border-color); padding-top: 12px;">
+                        <div *ngFor="let comment of post.comments" style="margin-bottom: 8px; font-size: 14px;">
+                            <span style="font-weight: 700;">{{ comment.userName }}:</span> {{ comment.content }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div *ngIf="posts.length === 0 && searchQuery" style="padding: 40px; text-align: center; color: var(--text-muted);">
+            No posts found with #{{ searchQuery }}
+        </div>
+    </div>
+</div>
+</div>

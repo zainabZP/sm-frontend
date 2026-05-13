@@ -1,0 +1,250 @@
+<div class="feed-header" style="display: flex; align-items: center; justify-content: space-between;">
+    <h2 style="font-weight: 800; font-size: 20px;">{{ user?.userName || 'Profile' }}</h2>
+    <div *ngIf="message" class="alert alert-success" style="padding: 5px 15px; border-radius: 20px; background: #d4edda; color: #155724; font-size: 14px;">
+        {{ message }}
+    </div>
+</div>
+
+<!-- Header Graphic -->
+<div class="profile-banner"></div>
+
+<div style="padding: 16px; position: relative;">
+    <div class="profile-avatar" [style.background-image]="user?.avatarUrl ? 'url(' + user?.avatarUrl + ')' : ''"></div>
+
+    <div *ngIf="isOwnProfile" style="display: flex; justify-content: flex-end; margin-top: -50px; margin-bottom: 20px; gap: 10px;">
+        <button class="btn-outline" (click)="showEditModal = true">Edit profile</button>
+        <button class="btn-outline" (click)="showPasswordModal = true">Security</button>
+    </div>
+
+    <div *ngIf="!isOwnProfile" style="display: flex; justify-content: flex-end; margin-top: -50px; margin-bottom: 20px;">
+        <button [class]="followStatus !== 'NONE' ? 'btn-outline' : 'btn-primary'" 
+                (click)="followStatus === 'NONE' ? follow() : unfollow()">
+            {{ followStatus === 'ACCEPTED' ? 'Unfollow' : (followStatus === 'PENDING' ? 'Pending' : 'Follow') }}
+        </button>
+    </div>
+
+    <h2 style="font-size: 20px; font-weight: 800; margin-bottom: 4px;">{{ user?.fullName }}</h2>
+    <p style="color: var(--text-muted); margin-bottom: 12px;">&#64;{{ user?.userName }}</p>
+    
+    <p style="margin-bottom: 16px; font-size: 15px;">{{ user?.bio || 'No bio yet.' }}</p>
+
+    <div style="display: flex; gap: 20px; margin-bottom: 16px;">
+        <p (click)="openFollowing()" style="cursor: pointer;"><span style="font-weight: 800;">{{ user?.followingCount || 0 }}</span> <span style="color: var(--text-muted);">Following</span></p>
+        <p (click)="openFollowers()" style="cursor: pointer;"><span style="font-weight: 800;">{{ user?.followerCount || 0 }}</span> <span style="color: var(--text-muted);">Followers</span></p>
+        <div class="profile-stat" (click)="openPendingModal()" *ngIf="isOwnProfile && getActivePendingCount() > 0">
+            <span class="stat-value" style="font-weight: 800; color: var(--twitter-blue);">{{ getActivePendingCount() }}</span>
+            <span class="stat-label" style="color: var(--twitter-blue);">Pending</span>
+        </div>
+    </div>
+
+    <div *ngIf="isOwnProfile" style="margin-bottom: 16px;">
+        <button class="btn-outline" (click)="togglePrivacy()">
+            {{ user?.isPrivate ? 'Set Public' : 'Set Private' }}
+        </button>
+    </div>
+</div>
+
+<div class="divider"></div>
+<div style="display: flex; justify-content: space-around; padding: 16px; border-bottom: 1px solid var(--border-color);">
+    <span [class.active-tab]="activeTab === 'posts'" (click)="switchTab('posts')" style="font-weight: 700; color: var(--text-muted); cursor: pointer; padding-bottom: 14px;">Posts</span>
+    <span [class.active-tab]="activeTab === 'replies'" (click)="switchTab('replies')" style="font-weight: 700; color: var(--text-muted); cursor: pointer; padding-bottom: 14px;">Replies</span>
+    <span [class.active-tab]="activeTab === 'likes'" (click)="switchTab('likes')" style="font-weight: 700; color: var(--text-muted); cursor: pointer; padding-bottom: 14px;">Likes</span>
+</div>
+
+<!-- Tab Content -->
+<div *ngIf="activeTab === 'posts'" class="posts-container">
+    <div *ngFor="let post of posts" class="post-card" style="padding: 16px; border-bottom: 1px solid var(--border-color);">
+        <ng-container *ngTemplateOutlet="postTemplate; context: { $implicit: post }"></ng-container>
+    </div>
+</div>
+
+<div *ngIf="activeTab === 'replies'" class="posts-container">
+    <div *ngFor="let post of replies" class="post-card" style="padding: 16px; border-bottom: 1px solid var(--border-color);">
+        <ng-container *ngTemplateOutlet="postTemplate; context: { $implicit: post }"></ng-container>
+    </div>
+</div>
+
+<div *ngIf="activeTab === 'likes'" class="posts-container">
+    <div *ngFor="let post of likedPosts" class="post-card" style="padding: 16px; border-bottom: 1px solid var(--border-color);">
+        <ng-container *ngTemplateOutlet="postTemplate; context: { $implicit: post }"></ng-container>
+    </div>
+</div>
+
+<!-- Reusable Post Template -->
+<ng-template #postTemplate let-post>
+    <div style="display: flex; gap: 12px;">
+        <div class="avatar-placeholder" [routerLink]="['/profile', post.userId]" [style.background-image]="post.avatarUrl ? 'url(' + post.avatarUrl + ')' : ''" style="width: 40px; height: 40px; border-radius: 50%; background-size: cover; background-position: center; flex-shrink: 0; cursor: pointer;"></div>
+        <div style="flex: 1;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                <div [routerLink]="['/profile', post.userId]" style="cursor: pointer;">
+                    <span style="font-weight: 700; margin-right: 6px;">{{ post.fullName || post.userName || 'User' + post.userId }}</span>
+                    <span style="color: var(--text-muted); font-size: 14px;">&#64;{{ (post.userName || 'user' + post.userId).toLowerCase() }}</span>
+                </div>
+                
+                <!-- Delete Button (Only for own posts in 'Posts' tab) -->
+                <button *ngIf="isOwnProfile && activeTab === 'posts' && post.userId === user?.userId" (click)="deletePost(post.postId)" style="background: none; border: none; color: #ff4d4d; cursor: pointer; padding: 5px;" title="Delete Post">
+                    ✕
+                </button>
+            </div>
+            
+            <p style="font-size: 15px; margin-bottom: 12px; white-space: pre-wrap;">{{ post.content }}</p>
+            
+            <!-- Hashtags -->
+            <div *ngIf="post.hashtags" style="margin-bottom: 12px; display: flex; flex-wrap: wrap; gap: 8px;">
+                <span *ngFor="let tag of post.hashtags.split(' ')" 
+                      [routerLink]="['/search']" [queryParams]="{ hashtag: tag.replace('#', '') }"
+                      style="color: var(--twitter-blue); cursor: pointer; font-size: 14px; font-weight: 500;">
+                    {{ tag.startsWith('#') ? tag : '#' + tag }}
+                </span>
+            </div>
+            
+            <!-- Post Image -->
+            <div *ngIf="post.mediaUrl" style="margin-bottom: 12px; border-radius: 16px; overflow: hidden; border: 1px solid var(--border-color);">
+                <img [src]="post.mediaUrl" style="width: 100%; display: block; max-height: 400px; object-fit: cover;">
+            </div>
+            
+            <!-- Action bar -->
+            <div style="display: flex; gap: 20px; margin-top: 12px; color: var(--text-muted);">
+                <button class="action-btn comment-btn" (click)="toggleComments(post)" style="background: none; border: none; cursor: pointer; color: inherit; display: flex; align-items: center; gap: 5px;">
+                    <span style="font-size: 18px;">💬</span>
+                    <span>{{ post.commentCount }}</span>
+                </button>
+                <button class="action-btn like-btn" [class.liked]="post.hasLiked" (click)="toggleLike(post)" style="background: none; border: none; cursor: pointer; color: inherit; display: flex; align-items: center; gap: 5px;">
+                    <span style="font-size: 18px;">{{ post.hasLiked ? '❤️' : '🤍' }}</span>
+                    <span [style.color]="post.hasLiked ? 'var(--heart-red)' : 'inherit'">{{ post.likeCount }}</span>
+                </button>
+            </div>
+
+            <!-- Comments Section -->
+            <div *ngIf="post.showComments" style="margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 16px;">
+                <div style="display: flex; gap: 10px; margin-bottom: 16px;">
+                    <input type="text" [(ngModel)]="post.newComment" placeholder="Post your reply" style="flex: 1; background: transparent; border: 1px solid var(--border-color); border-radius: 20px; padding: 8px 16px; color: var(--text-main);">
+                    <button class="btn-primary" (click)="addComment(post)" [disabled]="!post.newComment?.trim()" style="padding: 4px 16px; font-size: 14px;">Reply</button>
+                </div>
+                
+                <div *ngFor="let comment of post.comments" class="comment-item" style="margin-bottom: 12px; font-size: 14px; display: flex; gap: 10px;">
+                    <div class="avatar-placeholder" [routerLink]="['/profile', comment.userId]" [style.background-image]="comment.avatarUrl ? 'url(' + comment.avatarUrl + ')' : ''" style="width: 24px; height: 24px; background-size: cover; background-position: center; cursor: pointer;"></div>
+                    <div>
+                        <span [routerLink]="['/profile', comment.userId]" style="font-weight: 700; cursor: pointer;">{{ comment.fullName || comment.userName || 'User' + comment.userId }}</span>
+                        <p style="margin: 4px 0;">{{ comment.content }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</ng-template>
+
+<!-- Edit Profile Modal -->
+<div *ngIf="showEditModal" class="modal-overlay">
+    <div class="modal-content">
+        <h3>Edit Profile</h3>
+        <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" [(ngModel)]="editDto.fullName" placeholder="Full Name">
+        </div>
+        <div class="form-group">
+            <label>Bio</label>
+            <textarea [(ngModel)]="editDto.bio" placeholder="Bio"></textarea>
+        </div>
+        <div class="form-group">
+            <label>Profile Picture URL</label>
+            <input type="text" [(ngModel)]="editDto.avatarUrl" placeholder="URL">
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+            <button class="btn-outline" (click)="showEditModal = false">Cancel</button>
+            <button class="btn-primary" (click)="updateProfile()">Save</button>
+        </div>
+    </div>
+</div>
+
+<!-- Change Password Modal -->
+<div *ngIf="showPasswordModal" class="modal-overlay">
+    <div class="modal-content">
+        <h3>Change Password</h3>
+        <div class="form-group">
+            <label>Current Password</label>
+            <input type="password" [(ngModel)]="passwordDto.currentPassword">
+        </div>
+        <div class="form-group">
+            <label>New Password</label>
+            <input type="password" [(ngModel)]="passwordDto.newPassword">
+        </div>
+        <div *ngIf="error" class="error-text">{{ error }}</div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+            <button class="btn-outline" (click)="showPasswordModal = false; error = ''">Cancel</button>
+            <button class="btn-primary" (click)="changePassword()">Change</button>
+        </div>
+    </div>
+</div>
+
+<!-- Followers Modal -->
+<div *ngIf="showFollowersModal" class="modal-overlay">
+    <div class="modal-content" style="max-height: 400px; overflow-y: auto;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+            <h3>Followers</h3>
+            <button (click)="showFollowersModal = false" style="background:none; border:none; cursor:pointer; font-size:20px;">✕</button>
+        </div>
+        <div *ngIf="followers.length === 0" style="text-align: center; color: var(--text-muted); padding: 20px;">
+            No followers yet.
+        </div>
+        <div *ngFor="let f of followers" class="user-item" style="display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border-color);">
+            <div class="avatar-placeholder" style="width: 40px; height: 40px; border-radius: 50%; background: var(--insta-gradient); flex-shrink: 0;"></div>
+            <div style="flex: 1; cursor: pointer;" [routerLink]="['/profile', f.followerId]" (click)="showFollowersModal = false">
+                <div style="font-weight: 700;">{{ f.fullName || 'User ' + f.followerId }}</div>
+                <div style="color: var(--text-muted); font-size: 13px;">&#64;{{ f.userName || 'user' + f.followerId }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Following Modal -->
+<div *ngIf="showFollowingModal" class="modal-overlay">
+    <div class="modal-content" style="max-height: 400px; overflow-y: auto;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+            <h3>Following</h3>
+            <button (click)="showFollowingModal = false" style="background:none; border:none; cursor:pointer; font-size:20px;">✕</button>
+        </div>
+        <div *ngIf="following.length === 0" style="text-align: center; color: var(--text-muted); padding: 20px;">
+            Not following anyone yet.
+        </div>
+        <div *ngFor="let f of following" class="user-item" style="display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border-color);">
+            <div class="avatar-placeholder" style="width: 40px; height: 40px; border-radius: 50%; background: var(--insta-gradient); flex-shrink: 0;"></div>
+            <div style="flex: 1; cursor: pointer;" [routerLink]="['/profile', f.followeeId]" (click)="showFollowingModal = false">
+                <div style="font-weight: 700;">{{ f.fullName || 'User ' + f.followeeId }}</div>
+                <div style="color: var(--text-muted); font-size: 13px;">&#64;{{ f.userName || 'user' + f.followeeId }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pending Requests Modal -->
+<div *ngIf="showPendingModal" class="modal-overlay">
+    <div class="modal-content" style="max-height: 400px; overflow-y: auto;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+            <h3>Follow Requests</h3>
+            <button (click)="showPendingModal = false" style="background:none; border:none; cursor:pointer; font-size:20px;">✕</button>
+        </div>
+        <div *ngIf="pendingRequests.length === 0" style="padding: 30px; text-align: center; color: var(--text-muted);">
+            No pending follow requests.
+        </div>
+        <div *ngFor="let req of pendingRequests" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding: 10px; border-bottom: 1px solid var(--border-color);">
+            <div class="avatar-placeholder" [style.background-image]="req.avatarUrl ? 'url(' + req.avatarUrl + ')' : ''" style="width: 40px; height: 40px; border-radius: 50%; background-size: cover; background-position: center; flex-shrink: 0;"></div>
+            <div style="flex: 1;">
+                <div style="font-weight: 700;">{{ req.fullName || req.userName }}</div>
+                <div style="color: var(--text-muted); font-size: 13px;">&#64;{{ req.userName }}</div>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <ng-container *ngIf="req.status === 'PENDING'">
+                    <button class="btn-primary" style="padding: 4px 12px; font-size: 13px;" (click)="acceptRequest(req)" [disabled]="req.processing">
+                        {{ req.processing ? '...' : 'Accept' }}
+                    </button>
+                    <button class="btn-outline" style="padding: 4px 12px; font-size: 13px;" (click)="rejectRequest(req)" [disabled]="req.processing">
+                        {{ req.processing ? '...' : 'Reject' }}
+                    </button>
+                </ng-container>
+                <span *ngIf="req.status === 'ACCEPTED'" style="color: var(--twitter-blue); font-weight: 600;">Accepted</span>
+                <span *ngIf="req.status === 'REJECTED'" style="color: var(--text-muted); font-weight: 600;">Rejected</span>
+            </div>
+        </div>
+    </div>
+</div>
